@@ -5,108 +5,78 @@
 
 using namespace std;
 
-typedef pair <int, int> par;
-
 #define N 11
 
-bool compara(par a, par b){
-      return a.second > b.second;
-}
+struct par {int vertice, ordem;};
 
-int qtdCores = 0;
-int cor[6] = {0x33F, 0xC0C, 0xCC0, 0xC90, 0x093, 0x069};
-par auxiliar[N];
-int matriz[N][N] = {
-//    A B C D E F G H I J K
-      0,1,0,0,0,0,0,1,0,0,0, // A
-      1,0,0,1,0,0,0,0,0,0,0, // B
-      0,0,0,1,0,0,0,0,0,0,0, // C
-      0,1,1,0,0,0,0,0,1,0,1, // D
-      0,0,0,0,0,1,0,0,0,1,1, // E
-      0,0,0,0,1,0,1,0,0,0,0, // F
-      0,0,0,0,0,1,0,1,0,0,1, // G
-      1,0,0,0,0,0,1,0,1,1,1, // H
-      0,0,0,1,0,0,0,1,0,1,0, // I
-      0,0,0,0,0,0,0,1,1,0,1, // J
-      0,0,0,1,1,0,1,1,0,1,0  // K
-};
-
-void colorir(int j, int i){ // Função para saber se algum vizinho tá pintado com a cor proibida
-      for (int k = 0; k < N; k++) {
-            if(j==9)printf("j:%d i:%d --> %d, %x, %x\n", j, i, auxiliar[j].first, auxiliar[k].second, auxiliar[i].second);
-
-            if(matriz[auxiliar[j].first][k]){
-                  printf("=-=-=-%x, %x\n", auxiliar[k].second, auxiliar[i].second);
-                  if(auxiliar[k].second == cor[qtdCores]){
-                        return;
-                  }
-
-            }
-      }
-      auxiliar[j].second = auxiliar[i].second;
-      // printf("|");
-}
+bool compara(par a, par b){return a.ordem > b.ordem;}
 
 int main(int argc, char const *argv[]) {
-      // .first é usado como letra do vertice e .second como ordem
+      // Inicia a matriz de adjacência:
+      int matriz[N][N] = {
+        //  0 1 2 3 4 5 6 7 8 9 10
+        //  A B C D E F G H I J K
+            0,1,0,0,0,0,0,1,0,0,0, // A 0
+            1,0,0,1,0,0,0,0,0,0,0, // B 1
+            0,0,0,1,0,0,0,0,0,0,0, // C 2
+            0,1,1,0,0,0,0,0,1,0,1, // D 3
+            0,0,0,0,0,1,0,0,0,0,1, // E 4
+            0,0,0,0,1,0,1,0,0,0,0, // F 5
+            0,0,0,0,0,1,0,1,0,0,1, // G 6
+            1,0,0,0,0,0,1,0,1,1,1, // H 7
+            0,0,0,1,0,0,0,1,0,1,0, // I 8
+            0,0,0,0,0,0,0,1,1,0,1, // J 9
+            0,0,0,1,1,0,1,1,0,1,0, // K 10
+      };
 
-      for (int i = 0; i < N; i++) { // marca a ordem de cada vértice para ordenar
-            int count = 0;
-            for (int j = 0; j < N; j++) if (matriz[i][j]) count++;
-            auxiliar[i].first = i;
-            auxiliar[i].second = count;
+      // Zera o vetor das ordens:
+      par vetor[N]; for (auto &i : vetor) i.ordem = 0;
+
+      // Seta as ordens dos vértices:
+      for (size_t i = 0; i < N; i++) for (size_t j = 0; j < N; j++) if (matriz[i][j]) vetor[i].ordem++;
+
+      // Numera os vértices antes de ordenar
+      for (size_t i = 0; i < N; i++) vetor[i].vertice = i;
+
+      // Ordena o vetor de ordens dos vértices:
+      sort (vetor, vetor + N, compara);
+
+      // Zera o vetor de cores e seta o primeiro com a prieira cor
+      int qtdCores = 1, cores[N]; for (auto &i : cores) i = 0; cores[vetor[0].vertice] = qtdCores;
+
+      // Variável de verificação para saber quando colorir um vértice
+      int flag = 0;
+      // Para cada posição no vértice de cores, se for a primeira posição ou se o vértice não estiver colorido, faça
+      for (size_t k = 0; k < N; k++) if (!k || !cores[vetor[k].vertice]) {
+            // Para cada coluna da matriz, ordenados pela ordem dos vértices, se não houver adjacência com o vértice K, faça
+            for (size_t i = 0; i < N; i++) if (!matriz[vetor[k].vertice][vetor[i].vertice]) {
+                  // Para cada linha da coluna sem adjacência com o vértice K, se houver adjacênia com algum vértice
+                  for (size_t j = 0; j < N; j++) if (matriz[vetor[j].vertice][vetor[i].vertice]) {
+                        // Se o vértice estiver pintado
+                        if (cores[vetor[j].vertice] == qtdCores) {
+                              flag = 0;
+                              break;
+                        }
+                        flag = 1;
+                  }
+                  // Se há autorização, pinte o vértice
+                  if (flag && !cores[vetor[i].vertice]) cores[vetor[i].vertice] = qtdCores;
+            }
+            qtdCores++;
       }
-
-      sort(auxiliar, auxiliar + N, compara); // Efetua a ordenação no vetor de pares
-
-      // impressão de teste:
-      for (int i = 0; i < N; i++) printf("%c %d\n", auxiliar[i].first+65, auxiliar[i].second);
-
-      // .second passa a ser usado para marcar a cor
-
-      for (auto &t : auxiliar) t.second = 0; // zera a cor no vetor de cores
-
-      // início do welsh e powell:
-      // colocar  a cor do primeiro elemento:
-      auxiliar[0].second = cor[qtdCores];
 
       for (int i = 0; i < N; i++) {
-            printf("%c não tem adj com: ", auxiliar[i].first);
-            for (int j = 0; j < N; j++) {
-                  if (auxiliar[i].first != auxiliar[j].first && matriz[auxiliar[i].first][auxiliar[j].first] == 0) {
-                        colorir(j, i); // j para colorir, i pára testar a cor
-                        printf("%c%x, ", auxiliar[j].first+65, auxiliar[j].second);
-                        // printf("%c, ", auxiliar[i].first+65);
-                  }
+            printf("%c:", vetor[i].vertice + 65);
+            switch (cores[vetor[i].vertice]) {
+                  case 1: printf(" RED\n"); break;
+                  case 2: printf(" BLUE\n"); break;
+                  case 3: printf(" YELLOW\n"); break;
+                  case 4: printf(" BLACK\n"); break;
+                  case 5: printf(" WHITE\n"); break;
+                  default: printf(" sem cor\n");
             }
-            printf("\n");
+
       }
 
-
-      /*for (int i = 0; i < N; i++) {
-            if (!coloracao[i]) {
-                  coloracao[i] = cores[qtdCores];
-                  printf("i:%d Linha %c (%3x) não tem adjacencia com: ", i, I+65, coloracao[i]);
-                  for (int j = 0; j < N; j++) {
-                        if (I != J && matriz[I][J] == 0) {
-                              // printf("%x", coloracao[i]);
-                              printf("%c->", J+65);
-                              if (ver(i, j, coloracao[i])) {
-                                    coloracao[j] = cores[qtdCores];
-                                    // printf("Pinta\n");
-                                    // printf("%x] ", cores[qtdCores]);
-                              }
-                              else{
-                                    // printf("Não pinta\n");
-                              }
-                        }
-                  }
-                  qtdCores++;
-                  printf("\n\n");
-            }
-      }*/
-
-      for (size_t i = 0; i < 11; i++) {
-            // printf("0x%3x\n", coloracao[i]);
-      }
+      return 0;
 }
